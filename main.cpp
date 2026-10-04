@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
         if (mesonfile.is_open()) {
             mesonfile << "project('" << projectname << "', 'cpp')\n\n";
             mesonfile << "executable('" << projectname
-                      << "', 'src/main.cpp')\n";
+                      << "', 'src/main.cpp', install: true)\n";
         }
     }
     std::ofstream readmefile(projectname + "/README.md");
