@@ -18,6 +18,21 @@ Create a CMake project:
 koiinit myproject --cmake
 ```
 
+## Example
+```bash
+koiinit virus
+```
+```text
+Created project 'virus' using Meson.
+```
+What it makes:
+```text
+virus
+├── meson.build
+├── README.md
+└── src
+    └── main.cpp
+```
 ## Build and install
 
 ```bash
