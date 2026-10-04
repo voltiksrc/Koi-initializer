@@ -1,10 +1,15 @@
 project(
     'koiinit',
     'cpp',
-    default_options: ['cpp_std=c++23']
+    version: '0.1.0',
+    default_options: [
+        'cpp_std=c++23',
+        'warning_level=3'
+    ]
 )
 
 executable(
     'koiinit',
-    'main.cpp'
+    'main.cpp',
+    install: true
 )

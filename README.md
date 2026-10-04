@@ -44,5 +44,5 @@ meson compile -C build
 ```
 
 ```bash
-sudo install -m 755 build/koiinit /usr/local/bin/koiinit
+sudo meson install -C build
 ```

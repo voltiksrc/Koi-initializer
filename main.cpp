@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -18,18 +19,31 @@ int main(int argc, char *argv[]) {
         std::cout << "Usage:\n";
         std::cout << "  koiinit <project-name>\n";
         std::cout << "  koiinit <project-name> --cmake\n";
+        std::cout << "  koiinit <project-name> --git\n";
+        std::cout << "  koiinit <project-name> --cmake --git\n";
         std::cout << "  koiinit --help\n\n";
         std::cout << "Options:\n";
         std::cout << "  --cmake   Generate a CMake project instead of Meson\n";
         std::cout << "  --help    Show this help message\n";
+        std::cout << "  --git     Initialize a Git repository\n";
         return 0;
     }
     bool use_cmake = false;
+    bool use_git = false;
+    for (int i = 2; i < argc; i++) {
+        string arg = argv[i];
+
+        if (arg == "--cmake") {
+            use_cmake = true;
+        } else if (arg == "--git") {
+            use_git = true;
+        } else {
+            std::cerr << "Unknown option: " << arg << '\n';
+            return 1;
+        }
+    }
     string projectname = argv[1];
 
-    if (argc >= 3 && string(argv[2]) == "--cmake") {
-        use_cmake = true;
-    }
     if (projectname == "test") {
         std::cerr << "'test' is reserved by Meson.\n";
         return 1;
@@ -82,6 +96,11 @@ int main(int argc, char *argv[]) {
     if (gitignore.is_open()) {
         gitignore << "build/\n";
         gitignore << ".cache/\n";
+    }
+    // initialize a empty git repo if --git is specified.
+    if (use_git) {
+        string command = "git init -b main \"" + projectname + "\"";
+        std::system(command.c_str());
     }
     // We check to see if its using cmake or meson to change the final print.
     if (use_cmake) {
