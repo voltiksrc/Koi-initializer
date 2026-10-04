@@ -18,6 +18,11 @@ Create a CMake project:
 koiinit myproject --cmake
 ```
 
+Create a CMake project and initialize a empty git repo:
+```bash
+koiinit myproject --cmake --git
+```
+
 ## Example
 ```bash
 koiinit virus
