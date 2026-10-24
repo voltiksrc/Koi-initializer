@@ -1,0 +1,10 @@
+# Executable files
+build/
+/example
+.cache/
+
+# Editor files
+*.o
+*.a
+*.so
+compile_commands.json

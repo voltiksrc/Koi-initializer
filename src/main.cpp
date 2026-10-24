@@ -26,12 +26,14 @@ int main(int argc, char* argv[]) {
         std::cout << "  koiinit <project-name> --cmake\n";
         std::cout << "  koiinit <project-name> --meson\n";
         std::cout << "  koiinit <project-name> --git\n";
+        std::cout << "  koiinit <project-name> --no-format\n";
         std::cout << "  koiinit <project-name> --meson --git\n";
         std::cout << "  koiinit <project-name> --cmake --git\n";
         std::cout << "  koiinit --help\n\n";
         std::cout << "Options:\n";
         std::cout << "  --cmake   Generate a CMake project instead of Makefile\n";
         std::cout << "  --meson   Generate a Meson project instead of Makefile\n";
+        std::cout << "  --no-format Do not add .clang-format file.\n";
         std::cout << "  --help    Show this help message\n";
         std::cout << "  --git     Initialize a Git repository\n";
         return 0;
@@ -40,6 +42,7 @@ int main(int argc, char* argv[]) {
     bool use_cmake = false;
     bool use_git = false;
     bool use_meson = false;
+    bool generate_clangformat = true;
 
     for (int i = 2; i < argc; i++) {
         string arg = argv[i];
@@ -50,6 +53,8 @@ int main(int argc, char* argv[]) {
             use_git = true;
         } else if (arg == "--meson") {
             use_meson = true;
+        } else if (arg == "--no-format") {
+            generate_clangformat = false;
         } else {
             std::cerr << "Unknown option: " << arg << '\n';
             return 1;
@@ -147,7 +152,7 @@ LDLIBS :=
 
 )";
 
-            makefile << "TARGET := " << projectname << "\n";
+            makefile << "TARGET := " << projectname << "\n\n";
 
             makefile << R"(SRC_DIR := src
 BUILD_DIR := build
@@ -223,14 +228,16 @@ uninstall:
         gitignore << "compile_commands.json\n";
     }
 
-    std::ofstream formatfile(projectname + "/.clang-format", std::ios::out | std::ios::noreplace);
+    if (generate_clangformat) {
+        std::ofstream formatfile(projectname + "/.clang-format",
+                                 std::ios::out | std::ios::noreplace);
 
-    if (!formatfile) {
-        std::cerr << "Cannot create .clang-format.\n";
-        return 1;
-    }
+        if (!formatfile) {
+            std::cerr << "Cannot create .clang-format.\n";
+            return 1;
+        }
 
-    formatfile << R"(BasedOnStyle: LLVM
+        formatfile << R"(BasedOnStyle: LLVM
 IndentWidth: 4
 ColumnLimit: 100
 UseTab: Never
@@ -240,7 +247,7 @@ ReferenceAlignment: Left
 SortIncludes: true
 AllowShortFunctionsOnASingleLine: Empty
 )";
-
+    }
     // initialize a empty git repo if --git is specified.
     if (use_git) {
         pid_t pid = fork();
