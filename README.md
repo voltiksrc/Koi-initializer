@@ -33,6 +33,7 @@ Create a Meson project and initialize a empty git repo:
 
 ```bash
 koiinit --meson --git
+```
 
 ## Example
 ```bash
