@@ -10,6 +10,6 @@ project(
 
 executable(
     'koiinit',
-    'main.cpp',
+    'src/main.cpp',
     install: true
 )

@@ -6,7 +6,7 @@ It creates a simple starter project using either Meson or CMake.
 
 ## Usage
 
-Create a Meson project:
+Create a Makefile project:
 
 ```bash
 koiinit myproject
@@ -23,21 +23,53 @@ Create a CMake project and initialize a empty git repo:
 koiinit myproject --cmake --git
 ```
 
+Create a Meson project:
+
+```bash
+koiinit myproject --meson
+```
+
+Create a Meson project and initialize a empty git repo:
+
+```bash
+koiinit --meson --git
+
 ## Example
 ```bash
-koiinit virus
+koiinit virus 
 ```
 ```text
-Created project 'virus' using Meson.
+Created project 'virus' using Make.
 ```
 What it makes:
 ```text
 virus
+├── .gitignore
+├── .clang-format
+├── Makefile
+├── README.md
+└── src
+    └── main.cpp
+```
+
+Or with Meson:
+```bash
+koiinit virus --meson
+```
+```text
+Created project 'virus' using Meson.
+```
+
+```text
+virus
+├── .gitignore
+├── .clang-format
 ├── meson.build
 ├── README.md
 └── src
     └── main.cpp
 ```
+
 ## Build and install
 
 ```bash

@@ -1,0 +1,42 @@
+
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 100
+
+BreakBeforeBraces: Attach
+IndentCaseLabels: true
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceBeforeAssignmentOperators: true
+
+AlignOperands: Align
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+
+BinPackArguments: false
+BinPackParameters: false
+
+SortIncludes: true
+IncludeBlocks: Regroup
+
+AccessModifierOffset: -4
+
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+
+ReflowComments: true
+
+Standard: c++20
+

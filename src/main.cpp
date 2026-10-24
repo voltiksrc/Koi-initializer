@@ -1,17 +1,22 @@
-#include <cstdlib>
+
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 using std::string;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     // check check check
     if (argc < 2) {
         std::cerr << "No project name provided.\n";
         return 1;
     }
+
     string arg1 = argv[1];
 
     if (arg1 == "--help" || arg1 == "-h") {
@@ -31,10 +36,11 @@ int main(int argc, char *argv[]) {
         std::cout << "  --git     Initialize a Git repository\n";
         return 0;
     }
-    
+
     bool use_cmake = false;
     bool use_git = false;
     bool use_meson = false;
+
     for (int i = 2; i < argc; i++) {
         string arg = argv[i];
 
@@ -49,31 +55,39 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
+
     if (use_meson && use_cmake) {
-        std::cerr<<"You cannot select both CMake and Meson.\n";
+        std::cerr << "You cannot select both CMake and Meson.\n";
         return 1;
-    } 
+    }
+
     string projectname = argv[1];
 
+    // Meson has a function named test so we cannot name the project name
+    // test otherwise the compiler fails
     if (projectname == "test" && use_meson) {
         std::cerr << "'test' is reserved by Meson.\n";
         return 1;
     }
-    // I take it back, filesystem is nice library for c++ :)
+
     // make the main file and variables.
     if (!std::filesystem::create_directory(projectname)) {
-        std::cerr << "Error: Cannot create project directory '"<< projectname << "' (already exists).\n";
+        std::cerr << "Error: Cannot create project directory '" << projectname
+                  << "' (already exists).\n";
         return 1;
     }
 
     // Create project directory
     string srcdir = projectname + "/src/";
     std::filesystem::create_directory(srcdir);
+
     std::ofstream mainfile(projectname + "/src/main.cpp", std::ios::out | std::ios::noreplace);
+
     if (!mainfile) {
-        std::cerr<<"Cannot create main.cpp: file already exists or access denied.\n";
+        std::cerr << "Cannot create main.cpp: file already exists or access denied.\n";
         return 1;
     }
+
     if (mainfile.is_open()) {
         mainfile << "#include <iostream>\n\n";
         mainfile << "int main() {\n";
@@ -81,13 +95,17 @@ int main(int argc, char *argv[]) {
         mainfile << "    return 0;\n";
         mainfile << "}\n";
     }
-    // I dont rlly like cmake but I'll add it bc it would be convenient^^
+
+    // We create and open a cmake file to insert our text into it.
     if (use_cmake) {
-        std::ofstream cmakefile(projectname + "/CMakeLists.txt", std::ios::out | std::ios::noreplace);
+        std::ofstream cmakefile(projectname + "/CMakeLists.txt",
+                                std::ios::out | std::ios::noreplace);
+
         if (!cmakefile) {
-            std::cerr<<"Cannot create CMakeLists.txt: file already exists or access denied.\n";
+            std::cerr << "Cannot create CMakeLists.txt: file already exists or access denied.\n";
             return 1;
         }
+
         if (cmakefile.is_open()) {
             cmakefile << "cmake_minimum_required(VERSION 3.16)\n";
             cmakefile << "project(" << projectname << " LANGUAGES CXX)\n\n";
@@ -95,61 +113,87 @@ int main(int argc, char *argv[]) {
             cmakefile << "set(CMAKE_CXX_STANDARD_REQUIRED ON)\n\n";
             cmakefile << "add_executable(" << projectname << " src/main.cpp)\n";
         }
+
     } else if (use_meson) {
         // I prob should make a helper to make these
         std::ofstream mesonfile(projectname + "/meson.build", std::ios::out | std::ios::noreplace);
+
         if (!mesonfile) {
-            std::cerr<<"Cannot create meson.build: file already exists or access denied.\n";
+            std::cerr << "Cannot create meson.build: file already exists or access denied.\n";
             return 1;
         }
+
         if (mesonfile.is_open()) {
-            mesonfile << "project('" << projectname << "', 'cpp', default_options: ['cpp_std=c++23'])\n\n";
-            mesonfile << "executable('" << projectname
-                      << "', 'src/main.cpp', install: true)\n";
+            mesonfile << "project('" << projectname
+                      << "', 'cpp', default_options: ['cpp_std=c++23'])\n\n";
+
+            mesonfile << "executable('" << projectname << "', 'src/main.cpp', install: true)\n";
         }
+
     } else {
         std::ofstream makefile(projectname + "/Makefile", std::ios::out | std::ios::noreplace);
+
         if (!makefile) {
-            std::cerr<<"Cannot create Makefile: file already exists or access denied.\n";
+            std::cerr << "Cannot create Makefile: file already exists or access denied.\n";
             return 1;
         }
+
         if (makefile.is_open()) {
-            makefile << "CXX := g++\n";
-            makefile << "CXXFLAGS := -std=c++23 -Wall -Wextra -Wpedantic -O2 -MMD -MP\n";
-            makefile << "CPPFLAGS := -Isrc\n";
-            makefile << "LDFLAGS := \n";
-            makefile << "LDLIBS := \n\n";
-            makefile << "TARGET := "<<projectname<<'\n';
-            makefile << "SRC_DIR := src\n";
-            makefile << "BUILD_DIR := build\n\n";
-            makefile << "SOURCES := $(wildcard $(SRC_DIR)/*.cpp)\n";
-            makefile << "OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))\n";
-            makefile << "DEPS := $(OBJECTS:.o=.d)\n\n";
-            makefile << "PREFIX ?= /usr/local\n";
-            makefile << "BINDIR := $(PREFIX)/bin\n\n";
-            makefile << "all: $(TARGET)\n\n";
-            makefile << "$(TARGET): $(OBJECTS)\n";
-            makefile << "	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@\n\n";
-            makefile << "$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp\n";
-            makefile << "	@mkdir -p $(BUILD_DIR)\n";
-            makefile << "	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c $< -o $@\n\n";
-            makefile << "run: $(TARGET)\n";
-            makefile << "	./$(TARGET)\n\n";
-            makefile << "clean:\n";
-            makefile << "	rm -rf $(BUILD_DIR) $(TARGET)\n\n";
-            makefile << "install: $(TARGET)\n";
-            makefile << "	install -Dm755 $(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET)\n\n";
-            makefile << "uninstall:\n";
-            makefile << "	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)\n\n";
-            makefile << ".PHONY: all clean run install uninstall\n\n";
-            makefile << "-include $(DEPS)\n";
+            makefile << R"(CXX := g++
+CXXFLAGS := -std=c++23 -Wall -Wextra -Wpedantic -O2
+CPPFLAGS := -Isrc
+LDFLAGS :=
+LDLIBS :=
+
+)";
+
+            makefile << "TARGET := " << projectname << "\n";
+
+            makefile << R"(SRC_DIR := src
+BUILD_DIR := build
+
+SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
+DEPS := $(OBJECTS:.o=.d)
+
+PREFIX ?= /usr/local
+BINDIR := $(PREFIX)/bin
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CXX) $^ $(LDFLAGS) $(LDLIBS) -o $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+run: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -rf $(BUILD_DIR) $(TARGET)
+
+install: $(TARGET)
+	install -Dm755 $(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET)
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
+
+.PHONY: all clean run install uninstall
+
+-include $(DEPS)
+)";
         }
     }
+
     std::ofstream readmefile(projectname + "/README.md", std::ios::out | std::ios::noreplace);
+
     if (!readmefile) {
-        std::cerr<<"Cannot create README.md: file already exists or access denied.\n";
+        std::cerr << "Cannot create README.md: file already exists or access denied.\n";
         return 1;
     }
+
     if (readmefile.is_open()) {
         readmefile << "# " << projectname << "\n\n";
         readmefile << "<!--\n";
@@ -158,13 +202,15 @@ int main(int argc, char *argv[]) {
         readmefile << "-->\n";
         // I decided to add the autogenerated message cuz why not?
     }
+
     // create the gitignore
     std::ofstream gitignore(projectname + "/.gitignore", std::ios::out | std::ios::noreplace);
-    
+
     if (!gitignore) {
-        std::cerr<<"Cannot create gitignore: file already exists or access denied.\n";
+        std::cerr << "Cannot create gitignore: file already exists or access denied.\n";
         return 1;
     }
+
     if (gitignore.is_open()) {
         gitignore << "# Executable files\n";
         gitignore << "build/\n";
@@ -176,17 +222,69 @@ int main(int argc, char *argv[]) {
         gitignore << "*.so\n";
         gitignore << "compile_commands.json\n";
     }
+
+    std::ofstream formatfile(projectname + "/.clang-format", std::ios::out | std::ios::noreplace);
+
+    if (!formatfile) {
+        std::cerr << "Cannot create .clang-format.\n";
+        return 1;
+    }
+
+    formatfile << R"(BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+UseTab: Never
+BreakBeforeBraces: Attach
+PointerAlignment: Left
+ReferenceAlignment: Left
+SortIncludes: true
+AllowShortFunctionsOnASingleLine: Empty
+)";
+
     // initialize a empty git repo if --git is specified.
     if (use_git) {
-        string command = "git init -b main \"" + projectname + "\"";
-        std::system(command.c_str());
+        pid_t pid = fork();
+
+        if (pid == -1) {
+            perror("fork");
+            return 1;
+        }
+
+        if (pid == 0) {
+            char* args[] = {const_cast<char*>("git"),
+                            const_cast<char*>("init"),
+                            const_cast<char*>("-b"),
+                            const_cast<char*>("main"),
+                            projectname.data(),
+                            nullptr};
+
+            execvp("git", args);
+
+            perror("execvp");
+            _exit(127);
+        }
+
+        int status = 0;
+
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("waitpid");
+            return 1;
+        }
+
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            std::cerr << "Git initialization failed.\n";
+            return 1;
+        }
     }
+
     // We check to see if its using cmake or meson to change the final print.
     if (use_cmake) {
         std::cout << "Created project '" << projectname << "' using CMake.\n";
     } else if (use_meson) {
         std::cout << "Created project '" << projectname << "' using Meson.\n";
     } else {
-        std::cout << "Created project '"<<projectname<<"' using Make.\n";
+        std::cout << "Created project '" << projectname << "' using Make.\n";
     }
+
+    return 0;
 }
