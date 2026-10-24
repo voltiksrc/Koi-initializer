@@ -225,6 +225,7 @@ uninstall:
         gitignore << "*.o\n";
         gitignore << "*.a\n";
         gitignore << "*.so\n";
+        gitignore << "*.d\n";
         gitignore << "compile_commands.json\n";
     }
 

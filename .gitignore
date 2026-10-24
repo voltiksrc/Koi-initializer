@@ -1,2 +1,11 @@
+# Executables + cache
 build/
+/koiinit
 .cache/
+
+# Editor
+*.o
+*.a
+*.so
+*.d
+compile_commands.json

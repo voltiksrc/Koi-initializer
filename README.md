@@ -2,7 +2,7 @@
 
 A tiny C++ project initializer that is basically a mini Cargo.
 
-It creates a simple starter project using either Meson or CMake.
+It creates a simple starter project using either Make, CMake, or Meson.
 
 ## Usage
 
@@ -73,13 +73,9 @@ virus
 ## Build and install
 
 ```bash
-meson setup build
+make -j8
 ```
 
 ```bash
-meson compile -C build
-```
-
-```bash
-sudo meson install -C build
+sudo make install
 ```
